@@ -1,0 +1,193 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API - frequency analysis</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    
+    <!-- vny ttf -->
+    <style>
+      @font-face {
+        font-family: 'EVA Hand 1';
+        font-style: normal;
+        src: url('.././fonts/eva1.ttf') format('truetype');
+      }
+      
+      .evaFont {
+        font-family: 'EVA Hand 1';
+        font-size: 14pt;
+      }
+    </style>
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container" >
+      <div class="panel panel-default">
+        <div class="panel-heading">Frequency analysis</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputUrl">Base URL</label>
+            <input type="text" class="form-control" id="inputUrl" value="http://datalunch.com/voynich/api/v1/" />
+            <div class="radio">
+              <label><input type="radio" name="optionTokens" value="morphemes" checked>Morphemes</label>
+              <label><input type="radio" name="optionTokens" value="tokens">Tokens</label>
+            </div>
+            <label for="inputMorphemeList">Morpheme list</label>
+            <input type="text" class="form-control" id="inputMorphemeList" value="cfh,ckh,cph,cth,eee,iii,ch,ee,ii,sh,qo" />
+            <label for="inputQueryString">Query string</label>
+            <input type="text" class="form-control" id="inputQueryString" value="transcriber=H&isWord=1&hasFiller=0&isAmbiguous=0" />
+            <label for="inputFinalUrl">Final URL</label>
+            <input type="text" class="form-control" id="inputFinalUrl" value="" readonly />
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="buttonReportFrequencies">Report frequencies</button>
+            <div class="alert alert-warning collapse" id="alertRequestError">
+              <a href="#" class="close" data-dismiss="alert">&times;</a>
+              <strong>Warning!</strong> The request failed - check the URL
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <div>
+            <table class="table table-hover table-condensed">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Word (ASCII)</th>
+                  <th>Word (EVA)</th>
+                  <th>Count</th>
+                  <th>Weight</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+        
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <!-- chart js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.2/Chart.bundle.min.js"></script>
+    
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      // array of tokens from API call
+      var tokens;
+      
+      // click handler for buttonReportFrequencies
+      $('#buttonReportFrequencies').on('click', function() {
+        // clear any previous alert
+        $('#alertRequestError').hide();
+        
+        // construct and show final url
+        var route = $("input[name='optionTokens']:checked").val();
+        var finalUrl = $('#inputUrl').val();
+        finalUrl += route;
+        if (route == 'morphemes') {
+          finalUrl += '/' + $('#inputMorphemeList').val();
+        }
+        finalUrl += '?' + $('#inputQueryString').val();
+        $('#inputFinalUrl').val(finalUrl);
+        
+        // get data and render graph
+        $.ajax({
+          url: finalUrl,
+          type: 'GET',
+          success: function(data) {
+            // test if first element in tokens array is object
+            // if object get array of items
+            // if string just take array
+            if (typeof(data.tokens[0]) == 'string') {
+              tokens = data.tokens;
+            } else {
+              tokens = data.tokens.map(function(k) {return k.item;});
+            };
+            reportFrequencies((route == 'tokens'));
+          },
+          error: function(xhr, status, error) {
+            $('#alertRequestError').show();
+          }
+        });
+      });
+      
+      function reportFrequencies(asTokens) {
+        // create hash of token and count
+        var frequencyMap = {};
+        tokens.forEach(function(token) {
+          if (!frequencyMap[token]) {
+            frequencyMap[token] = 0;
+          };
+          frequencyMap[token] += 1;
+        });
+        
+        var sortedWords = [];
+        for (var word in frequencyMap) {
+          sortedWords.push([word, frequencyMap[word]])
+        };
+        sortedWords.sort(function(a, b) {return b[1] - a[1];});
+      
+        // tabulate with weights
+        var container = $('#rows');
+        container.empty();
+        for(var i=0; i<sortedWords.length; i++) {
+          var row = '<tr>';
+          row += '<td>' + (i + 1) + '</td>';
+          row += '<td>' + sortedWords[i][0] + '</td>';
+          row += '<td class="evaFont">' + sortedWords[i][0] + '</td>';
+          row += '<td>' + sortedWords[i][1] + '</td>';
+          row += '<td>' + (sortedWords[i][1] / sortedWords.length).toFixed(5) + '</td>';
+          row += '</tr>';
+          container.append(row);
+        };
+        
+      }
+
+    </script>
+
+  </body>
+
+</html>

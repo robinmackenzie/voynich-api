@@ -1,0 +1,398 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container" >
+    
+      <!-- nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="#analysis" role="tab" data-toggle="tab">Analysis</a></li>
+        <li><a href="#notes" role="tab" data-toggle="tab">Notes</a></li>
+      </ul>
+      
+      <!-- tab panes -->
+      <div class="tab-content">
+        <div class="tab-pane fade in active" id="analysis">
+          <div class="panel-body">
+            <div class="form-group">
+              <label for="inputUrl">Base URL</label>
+              <input type="text" class="form-control" id="inputUrl" value="http://datalunch.com/voynich/api/v1/" />
+              <div class="radio">
+                <label><input type="radio" name="optionTokens" value="morphemes" checked>Morphemes</label>
+                <label><input type="radio" name="optionTokens" value="tokens">Tokens</label>
+              </div>
+              <label for="inputMorphemeList">Morpheme list</label>
+              <input type="text" class="form-control" id="inputMorphemeList" value="cfh,ckh,cph,cth,ch,sh" />
+              <label for="inputQueryString">Query string</label>
+              <input type="text" class="form-control" id="inputQueryString" value="transcriber=H&isWord=1&hasFiller=0&isAmbiguous=0" />
+              <label for="inputFinalUrl">Final URL</label>
+              <input type="text" class="form-control" id="inputFinalUrl" value="" readonly />
+            </div>
+            <div class="form-group">
+              <button type="button" class="btn btn-primary" id="buttonGraph">Graph distributions</button>
+              <div class="alert alert-warning collapse" id="alertRequestError">
+                <a href="#" class="close" data-dismiss="alert">&times;</a>
+                <strong>Warning!</strong> The request failed - check the URL
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="inputUrl">Output</label>
+              <div class="panel panel-default">
+                <div class="panel-body">
+                  <canvas id="canvasChart"></canvas>              
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tab-pane fade in" id="notes">
+          <h3>Summary</h3>
+          <p>In 2000, Jorge Stolfi posted an <a href="http://www.ic.unicamp.br/~stolfi/voynich/00-12-21-word-length-distr/">
+          article</a> that nowadays is probably considered a classic of textual analyses of the 
+          Voynich Manuscript. It is called 'On the VMS Word Length Distribution' and basically presents
+          an interesting feature of the text where the word length distribution, for a quite specific
+          extract, matches a distribution that Stolfi terms 'choose(9, k-1)/2^9'.
+          </p>
+          <p>In his own words:
+            <blockquote>Two things are remarkable about this plot: (1) the surprising coincidence 
+            between the text and label distributions (even though the sample sizes differ by an 
+            order of magnitude, and the token distributions are quite different); and (2) the 
+            almost perfect symmetry of the distribution around its mean (5.5 symbols). These 
+            coincidences cry for an explanation. In fact, the word length distribution matches 
+            almost perfectly a binomial distribution for 9 equally-likely coin tosses, shifted by 1 
+            --- which is choose(9,k-1)/2^9:This coincidence suggests that the length of a word chosen 
+            at random from the lexicon is 1 plus the sum of nine random binary variables. What does 
+            that tell us about the code?
+            </blockquote>
+          </p>
+          <p>This example of the VMs REST API attempts to re-create Stolfi's experimental data in 
+          order to establish what the extract of the manuscript is that is required in order to 
+          reproduce the distribution.
+          </p>
+          <h3>The data</h3>
+          <p>Firstly, Stolfi states the following conditions for parsing the text to get his data:
+            <blockquote>A word is an abstract sequence of symbols; a token is an occurrence of a 
+            word in the VMS text (delimited by blanks, line breaks, etc.) The length of a word or 
+            token is the number of symbols it contains. For this page, we will define symbol as 
+            Currier did; i.e. EVA ch ans sh will be counted as single symbols, and so are EVA cth, 
+            ckh, etc..
+            </blockquote>
+            Therefore we will use the morphemes method to get an extract and we will use a 
+            morpheme list of cth, cph, cfh, ckh, ch and sh. Note that if you use a different list of
+            morphemes then you will get a slightly different distribution curve. Further he notes:
+            <blockquote>The source text was the per-character majority-vote transcription, excluding 
+            words with unreadable or rare characters (weirdos, EVA *, b, u, v, x, I, etc.) and characters 
+            which didn't get a clear majority reading.
+            </blockquote>
+            The current version of the API uses a version of the interlinear that does not include the
+            'majority-vote' transcription. Instead, I use these choices.
+            <ul>
+              <li>Use the Takeshi Takahashi transcription</li>
+              <li>Ignore 'comment' tokens e.g. {foo} in the data</li>
+              <li>Ignore tokens with %</li>
+              <li>Ignore tokens with *</li>
+            </ul>
+          </p>
+          <p>If you run the analysis you will see we get a word-length distribution very close to 
+          Stolfi's per his test.
+          </p>
+          <p>Note also Stolfi's comments about using Takahashi transcription from 
+          <a href="http://voynich.net/Arch/2000/05/msg00001.html">here</a>:
+            <blockquote>I have "majority vote" and a "consensus" version of the interlinear file.
+            I thought I had mentioned it here, but I notice that it is not listed 
+            in my Voynich pages.  Anyway, here it is:
+
+            http://www.dcc.unicamp.br/~stolfi/voynich/Notes/045/inter-cm.evt
+
+            It is in EVA encoding, basically in the EVMT format used by Gabriel
+            and Rene. The majority version is marked with transcriber code ";A>",
+            the consensus one with ";Y>". You should be able to use Rene's VTT
+            tool to extract the one you need.
+
+            You should also consider using Takeshi's version (code ";H>"), which
+            is the only complete one so far.
+
+            I used simple majority for the "A" version. Perhaps I should have
+            given different weights to different transcribers. But that would
+            would have been easy: a transcriber's reliability seems to vary with
+            page and character. (For instance, Currier often disagrees with
+            Friedman/D'Imperio on "i" vs "ii".) That may be another reason to use
+            Takeshi's version...
+
+            All the best,
+
+            --stolfi
+            </blockquote>
+          </p>
+          <p>Thanks to Terry Ritter for his javascript code for 
+          <a href="http://www.ciphersbyritter.com/JAVASCRP/BINOMPOI.HTM">Binomial and 
+          Poisson Statistics Functions in JavaScript</a>.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+        
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <!-- chart js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.2.2/Chart.bundle.min.js"></script>
+    
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      var tokens;
+      $('#buttonGraph').on('click', function() {
+        // clear any previous alert
+        $('#alertRequestError').hide();
+        
+        // construct and show final url
+        var route = $("input[name='optionTokens']:checked").val();
+        var finalUrl = $('#inputUrl').val();
+        finalUrl += route;
+        if (route == 'morphemes') {
+          finalUrl += '/' + $('#inputMorphemeList').val();
+        }
+        finalUrl += '?' + $('#inputQueryString').val();
+        $('#inputFinalUrl').val(finalUrl);
+        
+        // get data and render graph
+        $.ajax({
+          url: finalUrl,
+          type: 'GET',
+          success: function(data) {
+            // test if first element in tokens array is object
+            // if object get array of items
+            // if string just take array
+            if (typeof(data.tokens[0]) == 'string') {
+              tokens = data.tokens;
+            } else {
+              tokens = data.tokens.map(function(k) {return k.item;});
+            };
+            visualizeData((route == 'tokens'));
+          },
+          error: function(xhr, status, error) {
+            $('#alertRequestError').show();
+          }
+        });
+      });
+      
+      function visualizeData(asTokens) {
+        
+        // get length of longest token
+        var maxLength = 0;
+        if (asTokens) {
+          for(var i=0; i<tokens.length; i++) {
+            if(tokens[i].length > maxLength) {
+              maxLength = tokens[i].length;
+            }
+          }
+        } else {
+          for(var i=0; i<tokens.length; i++) {
+            var morphemizedTokenLength = (tokens[i].match(/_/g) || []).length + 1;
+            if(morphemizedTokenLength > maxLength) {
+              maxLength = morphemizedTokenLength;
+            }
+          }        
+        };
+        
+        // initialise arrays
+        var xLabels = [];
+        var tokenLengthCount = [];
+        var tokenLengthDensity = [];
+        var wordLengthCount = [];
+        var wordLengthDensity = [];
+
+        for(var i=0; i<maxLength; i++) {
+          tokenLengthCount.push(0);
+          tokenLengthDensity.push(0);
+          wordLengthCount.push(0);
+          wordLengthDensity.push(0);
+          xLabels.push((i+1).toString());
+        };
+        
+        // get length of each token in input
+        for (var i=0; i<tokens.length; i++) {
+          var tokenLength;
+          if (asTokens) {
+            tokenLength = tokens[i].length;
+          } else {
+            tokenLength = (tokens[i].match(/_/g) || []).length + 1;
+          };
+          tokenLengthCount[tokenLength-1] += 1;
+        };
+
+        // get token length densities
+        for (var i=0; i<tokenLengthCount.length; i++) {
+          tokenLengthDensity[i] = tokenLengthCount[i] / tokens.length;
+        };
+
+        // get unique words from tokens
+        var words = [];
+        for (var i=0; i<tokens.length; i++) {
+          if (words.indexOf(tokens[i]) < 0) {
+            words.push(tokens[i]);
+          }
+        };
+        
+        // get length of each word in input
+        for (var i=0; i<words.length; i++) {
+          var wordLength;
+          if (asTokens) {
+            wordLength = words[i].length;
+          } else {
+            wordLength = (words[i].match(/_/g) || []).length + 1;
+          }
+          wordLengthCount[wordLength-1] += 1;
+        };
+
+        // get token length densities
+        for (var i=0; i<wordLengthCount.length; i++) {
+          wordLengthDensity[i] = wordLengthCount[i] / words.length;
+        };
+        
+        // get binom(9, k-1)
+        var binomialDensity = [];
+        // do the shift by 1 per the Stolfi comment
+        binomialDensity.push(0);
+        // get the distribution
+        for(var i = 1; i<=9; i++) {
+          var out = binomTerm(0.5, 9, i);
+          binomialDensity.push(out);
+        };
+
+        // plot graph
+        var chartData = {
+          labels: xLabels,
+          // token distribution
+          datasets: [{
+            label: 'Voynich Tokens',
+            fill: false,
+            borderColor: '#22dd22',
+            pointBorderColor: '#ffffff',
+            pointBackgroundColor: '#44dd44',
+            data: tokenLengthDensity
+          },{
+            label: 'Voynich Words',
+            fill: false,
+            borderColor: '#dd2222',
+            pointBorderColor: '#ffffff',
+            pointBackgroundColor: '#dd4444',
+            data: wordLengthDensity
+          },{
+            label: 'Binom(9, k-1)',
+            fill: false,
+            borderColor: '#2222dd',
+            pointBorderColor: '#ffffff',
+            pointBackgroundColor: '#4444dd',
+            data: binomialDensity
+          }]
+        };
+
+        var chart = new Chart($('#canvasChart'), {
+          type: 'line',
+          data: chartData,
+          options: {}
+        });        
+      };
+
+      // http://www.ciphersbyritter.com/JAVASCRP/BINOMPOI.HTM
+      function binomTerm( p, n, k ) {
+        // for success probability p and n trials
+        // probability of exactly k successes
+        return Math.exp( LnComb(n,k) + k * Math.log(p)+ (n-k) * Math.log(1-p) );
+      };
+      
+      function LnComb( n, k ) {
+        if ((k == 0) || (k == n)) {
+          return 0;
+        } else if ((k > n) || (k < 0)) {
+          return -1E38;
+        } else {
+         return  (LnFact(n) - LnFact(k) - LnFact(n-k));
+        }
+      };
+
+      function Fact( x ) {
+        // x factorial
+        var  t=1;
+        while (x > 1) {
+          t *= x--;
+        }
+        return t;
+      };
+
+      function LnFact( x ) {
+        // ln(x!) by Stirling's formula
+        //   see Knuth I: 111
+        if (x <= 1) {
+          x = 1;
+        };
+        
+        if (x < 12) {
+          return Math.log( Fact(Math.round(x)) );
+        } else {
+          var invx = 1 / x;
+          var invx2 = invx * invx;
+          var invx3 = invx2 * invx;
+          var invx5 = invx3 * invx2;
+          var invx7 = invx5 * invx2;
+          
+          var sum = ((x + 0.5) * Math.log(x)) - x;
+          sum += Math.log(2*Math.PI) / 2;
+          sum += (invx / 12) - (invx3 / 360);
+          sum += (invx5 / 1260) - (invx7 / 1680);
+
+          return sum;
+        }
+      };
+    </script>
+
+  </body>
+
+</html>

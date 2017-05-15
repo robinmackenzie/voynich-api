@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+  </head>
+
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="./documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container-fluid">
+      <div class="panel panel-default">
+        <div class="panel panel-body">
+          <!-- get started content -->
+          <div id="content">
+                
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <footer>
+        <div class="row">
+          <div class="col-lg-12">
+            <p>Copyright &copy; www.datalunch.com 2016</p>
+          </div>
+        </div>
+        <!-- /.row -->
+      </footer>
+
+    </div>
+    <!-- /.container -->
+    
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>    
+    <!-- marked js -->
+    <script src="./vendor/marked/marked.js"></script>
+    
+    <script>    
+      // load and style the documentation
+      $(document).ready(function() {
+        $.get('README.md', function(md) {
+          $('#content').html(marked(md)); 
+        });
+      });
+    </script>
+  </body>
+
+</html>

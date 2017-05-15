@@ -1,0 +1,218 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <!-- pivot table js style -->
+    <link rel="stylesheet" href=".././vendor/pivottablejs/pivot.css">
+    
+    <!-- jquery and bootstrap scripts -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- pivot table js -->
+    <script src=".././vendor/pivottablejs/pivot.js"></script>
+    
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container-fluid" >
+      <div class="panel panel-default">
+        <div class="panel-heading">Pivot Table</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputBUrl">URL</label>
+            <textarea rows="2" class="form-control" id="inputUrl"></textarea>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="buttonRunAnalysis">Run analysis</button>
+            <div class="alert alert-warning collapse" id="alertRequestError">
+              <a href="#" class="close" data-dismiss="alert">&times;</a>
+              <strong>Warning!</strong> The request failed - check the URL
+            </div>
+          </div>
+        </div>
+      </div> 
+      
+      <!-- nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="#pivot" role="tab" data-toggle="tab">Pivot table</a></li>
+        <li><a href="#notes" role="tab" data-toggle="tab">Notes</a></li>
+      </ul>
+      
+      <!-- tab panes -->
+      <div class="tab-content">
+        <div class="tab-pane fade in active" id="pivot">
+          <div id="output">
+          </div>
+        </div>
+        <div class="tab-pane fade in" id="notes">
+          <h3>Summary</h3>
+          <p>An example of using a pivot table to analyse bigrams in extracts of the Voynich
+          Manuscript. Note the following:
+            <ul>
+              <li>The example requires the 'morphemes' route to be used; it is not useful 
+              to use the 'tokens' method.</li>
+              <li>The pivot table library is written by Nicolas Kruchten and made available
+              on this <a href="https://github.com/nicolaskruchten/pivottable">Github page</a></li>
+              <li>The extract is defined by the URL with the following columns returned</li>
+                <ul>
+                  <li>pageId e.g. f1r, f1v</li>
+                  <li>currierLanguage e.g. A, B or blank</li>
+                  <li>illustrationTypeDescription e.g. Herbal, Biological</li>
+                  <li>unitStyle e.g. P (Paragraph), L (Label)</li>
+                  <li>item - the actual token from the extract</li>
+                </ul>
+              </li>
+              <li>Post processing takes place to:
+                <ul>
+                  <li>Split the token into its morphemes</li>
+                  <li>Identify the language, section (illustrationTypeDescription) and style (unitStyle)</li>
+                  <li>Use space to identify word breaks</li>
+                  <li>Pass the new data set to the pivot table generator</li>
+                </ul>
+              </li>
+            </ul>
+          </p>
+          <h3>Usage</h3>
+          <p>Decide on your morphemes before running the analysis. This is very important e.g. if your
+          think that 'qo' should be treated as a unit then include it in the list.
+          </p>
+          <p>The pivot table is similar to that commonly used in Excel. You can drag and drop fields
+          between rows, columns and filters. The other options are for an aggreagator (how the data is 
+          calculated) and a renderer (e.g. simple table, or heatmap).
+          </p>
+          <p>The analysis here is presented as a heatmap/ count which clearly shows which morpheme pairs are
+          more frequently found than others.
+          </p>
+          <p>Try using the pre-set title filters (dicers) to filter the data down to more specific 
+          parts of the manuscript. You can analyse currier-A vs -B bigram frequencies and also 
+          see how labels differ from non-labels etc.
+          </p>
+          <p>Try using the filters on the row and column dimensions (slicers) to narrow down the bigram pairs
+          for analysis. E.g. you can just select the gallow morphemes to see if there is an interesting 
+          feature in a particular manuscript section.
+          </p>
+        </div>
+      </div> 
+      
+    </div>
+           
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      // array of token objects
+      var extract = {};
+      var pivotData = [];
+      var url = '';
+      
+      $(document).ready(function () {
+        url = 'http://datalunch.com/voynich/api/v1/';
+        url += 'morphemes/cfh,ckh,cph,cth,eee,iii,ch,ee,ii,sh,qo/';
+        url += 'pageId,currierLanguage,illustrationTypeDescription,unitStyle,item';
+        url += '?transcriber=H&isWord=1&hasFiller=0&isAmbiguous=0&hasDubiousWordBreak=0';
+        $('#inputUrl').val(url);
+      });
+      
+      // click handler for buttonRenderSunburstGraph
+      $('#buttonRunAnalysis').on('click', function() {
+        // clear any previous alert
+        $('#output').empty();
+        extract = {};
+        pivotData = [];
+
+        // get data and render 
+        $.ajax({
+          url: $('#inputUrl').val(),
+          type: 'GET'
+        }).done(function(data) {
+          extract = data.tokens;
+          runAnalysis();
+        }).fail(function(xhr, status, error) {
+          $('#alertRequestError').show();
+        });
+      });
+      
+      function runAnalysis() {
+        
+        // convert data to new object array
+        // {language: A or B or null, unitStyle: some style, label: 0 or 1, from: bigram, to: bigram}
+        var fromGram = '';
+        var toGram = '';
+        var language, isLabel;
+
+        // split tokens to morphemes and add to array for pivot
+        for (var i=0; i<extract.length; i++) {
+          language = extract[i].currierLanguage;
+          section = extract[i].illustrationTypeDescription;
+          style = extract[i].unitStyle;
+          // use space as word delimiter
+          var morphemes = extract[i].item.split('_');
+          for (var j=0; j<morphemes.length; j++) {
+            if (j == 0) {
+              fromGram = ' ';
+              toGram = morphemes[j];
+            } else if (j>0 && j<(morphemes.length-1)) {
+              fromGram = morphemes[j-1];
+              toGram = morphemes[j];
+            } else {
+              fromGram = morphemes[j];
+              toGram = ' ';
+            }
+            pivotData.push({'language': language, 'section': section, 'style': style, 'from': fromGram, 'to': toGram});
+          }
+        };
+        
+        // create pivot
+        $('#output').pivotUI(pivotData, {
+          rows: ['from'],
+          cols: ['to'],
+          aggregator: 'Count',
+          rendererName: 'Heatmap'
+        });
+        
+      }
+
+    </script>
+
+  </body>
+
+</html>

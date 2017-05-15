@@ -1,0 +1,117 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    
+    <!-- vny ttf -->
+    <style>
+      @font-face {
+        font-family: 'EVA Hand 1';
+        font-style: normal;
+        src: url('.././fonts/eva1.ttf') format('truetype');
+      }
+      
+      .evaFont {
+        font-family: 'EVA Hand 1';
+        font-size: 14pt;
+      }
+    </style>
+
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container-fluid" >
+      <div class="panel panel-default">
+        <div class="panel-heading">Test EVA font</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputUrl">API URL</label>
+            <input type="text" class="form-control" id="inputUrl"
+              value="http://datalunch.com/voynich/api/v1/tokens?pageId=f1r&transcriber=H&isWord=1"/>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="buttonRenderEva">Render</button>
+            <div class="alert alert-warning collapse" id="alertRequestError">
+              <a href="#" class="close" data-dismiss="alert">&times;</a>
+              <strong>Warning!</strong> The request failed - check the URL
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputUrl">Output</label>
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <div id="containerOutput" class="evaFont"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+        
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      $('#buttonRenderEva').on('click', function() {
+        $('#alertRequestError').hide();
+        $('#containerOutput').empty();
+        
+        $.ajax({
+          url: $('#inputUrl').val(),
+          type: 'GET',
+          success: function(data) {
+            $.each(data.tokens, function(index, item) {
+              $('#containerOutput').append(item + ' ');
+            });
+          },
+          error: function(xhr, status, error) {
+            $('#alertRequestError').show();
+          }
+        });
+      });
+    </script>
+
+  </body>
+
+</html>

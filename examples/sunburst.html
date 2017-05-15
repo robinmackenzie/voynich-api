@@ -1,0 +1,246 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API - sunburst graph</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container" >
+        
+      <!-- nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="#graph" role="tab" data-toggle="tab">Graph</a></li>
+        <li><a href="#notes" role="tab" data-toggle="tab">Notes</a></li>
+      </ul>
+      
+      <!-- tab panes -->
+      <div class="tab-content">
+        <div class="tab-pane fade in active" id="graph">
+          <div class="panel-body">
+            <div class="form-group">
+              <label for="inputUrl">Base URL</label>
+              <input type="text" class="form-control input-sm" id="inputUrl" value="http://datalunch.com/voynich/api/v1/" />
+              <div class="radio">
+                <label><input type="radio" name="optionTokens" value="morphemes" checked>Morphemes</label>
+                <label><input type="radio" name="optionTokens" value="tokens">Tokens</label>
+              </div>
+              <label for="inputMorphemeList">Morpheme list</label>
+              <input type="text" class="form-control input-sm" id="inputMorphemeList" value="cfh,ckh,cph,cth,eee,iii,ch,ee,ii,sh,qo" />
+              <label for="inputQueryString">Query string</label>
+              <input type="text" class="form-control input-sm" id="inputQueryString" value="transcriber=H&isWord=1&hasFiller=0&isAmbiguous=0" />
+              <label for="inputFinalUrl">Final URL</label>
+              <input type="text" class="form-control input-sm" id="inputFinalUrl" value="" readonly />
+            </div>
+            <div class="form-group">
+              <button type="button" class="btn btn-primary" id="buttonRenderSunburstGraph">Sunburst</button>
+              <div class="alert alert-warning collapse" id="alertRequestError">
+                <a href="#" class="close" data-dismiss="alert">&times;</a>
+                <strong>Warning!</strong> The request failed - check the URL
+              </div>
+            </div>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-body" id="graphContainer">
+            
+              <div id="main">
+                <div id="sequence"></div>
+                <div id="chart">
+                </div>
+              </div>
+
+            </div>
+          </div> 
+        </div> 
+          
+        <div class="tab-pane fade in" id="notes">
+        <h3>Credits</h3>
+        <p>Note that this visualisation was adapted from <a href="https://bl.ocks.org/kerryrodden/7090426">
+        here</a> with credit to <a href="https://bl.ocks.org/kerryrodden">Kerry Roden</a>
+        </p>
+        <p>Please suggest a better colour scheme if you have an idea!
+        </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <!-- d3 -->
+    <script src="//d3js.org/d3.v3.min.js"></script>
+    
+    <!-- 'sequences' for sunburst; adapted from https://bl.ocks.org/kerryrodden/7090426-->
+    <script src=".././assets/scripts/sequences.js"></script>
+    
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      // array of tokens from API call
+      var tokens;
+      // color object for sunburst
+      var colors = {};
+      
+      // click handler for buttonRenderSunburstGraph
+      $('#buttonRenderSunburstGraph').on('click', function() {
+        // clear any previous alert
+        $('#alertRequestError').hide();
+        
+        // construct and show final url
+        var route = $("input[name='optionTokens']:checked").val();
+        var finalUrl = $('#inputUrl').val();
+        finalUrl += route;
+        if (route == 'morphemes') {
+          finalUrl += '/' + $('#inputMorphemeList').val();
+        }
+        finalUrl += '?' + $('#inputQueryString').val();
+        $('#inputFinalUrl').val(finalUrl);
+        
+        // get data and render graph
+        $.ajax({
+          url: finalUrl,
+          type: 'GET',
+          success: function(data) {
+            // test if first element in tokens array is object
+            // if object get array of items
+            // if string just take array
+            if (typeof(data.tokens[0]) == 'string') {
+              tokens = data.tokens;
+            } else {
+              tokens = data.tokens.map(function(k) {return k.item;});
+            };
+            prepareVisualization((route == 'tokens'));
+          },
+          error: function(xhr, status, error) {
+            $('#alertRequestError').show();
+          }
+        });
+      });
+      
+      function prepareVisualization(asTokens) {
+        
+        // create hash of token and count
+        var frequencyMap = {};
+                
+        tokens.forEach(function(token) {
+          // sequences js wants - as path delimiter and 'end' as end delimiter
+          // convert token abc to a-b-c-end
+          // or convert morpheme from aa_bb_cc to aa-bb-cc-end
+          if (asTokens) {
+            token = token.split('').join('-') + '-end';
+          } else {
+            token = token.replace(/_/g, '-') + '-end';
+          };
+          
+          // add each unique part to colors hash and default to black
+          token.split('-').forEach(function (part) {
+            if (!colors[part] && part !== 'end') {
+              colors[part] = '#ffffff';
+            }
+          });
+
+          // add to word hash
+          if (!frequencyMap[token]) {
+            frequencyMap[token] = 0;
+          };
+          frequencyMap[token] += 1;
+          
+        });
+        
+        // replace black with color range and add end as grey
+        var partCount = Object.keys(colors).length;
+        var startColor = new GColor(112, 112, 200);
+        var endColor = new GColor(96, 255, 128);
+        var swatches = createColorRange(startColor, endColor, partCount);
+        for (var i=0; i<partCount; i++) {
+          var hexColor = rgb2hex(swatches[i].r, swatches[i].g, swatches[i].b);
+          colors[Object.keys(colors)[i]] = hexColor;
+        };
+        colors['end'] = '#cccccc';
+
+        // convert to array of [unique words, frequency]
+        var words = [];
+        for (var word in frequencyMap) {
+          words.push([word, frequencyMap[word]])
+        };
+                
+        // get hierarchy from array
+        var json = buildHierarchy(words);
+
+        // create sunburst
+        createVisualization(json);
+
+      }
+        
+      // color range functions - adapted from
+      // http://stackoverflow.com/questions/30218924/i-need-to-produce-a-smooth-color-range-from-two-colors-in-js
+      function GColor(r, g, b) {
+        r = (typeof r === 'undefined')?0:r;
+        g = (typeof g === 'undefined')?0:g;
+        b = (typeof b === 'undefined')?0:b;
+        return {r:r, g:g, b:b};
+      };
+      
+      function createColorRange (c1, c2, step) {
+        var colorList = [], tmpColor;
+        for (var i=0; i<255; i+= (255 / step)) {
+            tmpColor = new GColor();
+            tmpColor.r = c1.r + ((i*(c2.r-c1.r))/255);
+            tmpColor.g = c1.g + ((i*(c2.g-c1.g))/255);
+            tmpColor.b = c1.b + ((i*(c2.b-c1.b))/255);
+            colorList.push(tmpColor);
+        }
+        return colorList;
+      };
+      
+      // convert rgb(r, g, b) to hex
+      // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+      function rgb2hex(red, green, blue) {
+        var rgb = blue | (green << 8) | (red << 16);
+        return '#' + (0x1000000 + rgb).toString(16).slice(1)
+      }
+
+    </script>
+
+  </body>
+
+</html>

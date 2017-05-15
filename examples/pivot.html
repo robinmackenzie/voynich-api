@@ -1,0 +1,121 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <!-- pivot table js style -->
+    <link rel="stylesheet" href=".././vendor/pivottablejs/pivot.css">
+    
+    <!-- jquery and bootstrap scripts -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- pivot table js -->
+    <script src=".././vendor/pivottablejs/pivot.js"></script>
+    
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container" >
+      <div class="panel panel-default">
+        <div class="panel-heading">Pivot Table</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputBUrl">URL</label>
+            <textarea rows="4" class="form-control" id="inputUrl">http://datalunch.com/voynich/api/v1/morphemes/cfh,ckh,cph,cth,eee,iii,ch,ee,ii,sh,qo/pageId,currierLanguage,item?transcriber=H&isWord=1&hasFiller=0&isAmbiguous=0
+            </textarea>
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="buttonRunAnalysis">Run analysis</button>
+            <div class="alert alert-warning collapse" id="alertRequestError">
+              <a href="#" class="close" data-dismiss="alert">&times;</a>
+              <strong>Warning!</strong> The request failed - check the URL
+            </div>
+          </div>
+        </div>
+      </div> 
+      
+      <div class="panel panel-default">
+        <div class="panel-heading">Pivot Table
+        </div>
+        <div class="panel-body" id="output">
+        </div>
+      </div> 
+      
+    </div>
+           
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      // array of token objects
+      var morphemes;
+      
+      // click handler for buttonRenderSunburstGraph
+      $('#buttonRunAnalysis').on('click', function() {
+        // clear any previous alert
+
+        // get data and render 
+        $.ajax({
+          url: $('#inputUrl').val(),
+          type: 'GET'
+        }).done(function(data) {
+          morphemes = data.tokens;
+          runAnalysis();
+        }).fail(function(xhr, status, error) {
+          $('#alertRequestError').show();
+        })
+      
+      });
+      
+      function runAnalysis() {
+
+        $('#output').pivotUI(morphemes, {
+          rows: [],
+          cols: []
+        });
+
+      }
+
+    </script>
+
+  </body>
+
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- page style -->
+    <link rel="stylesheet" type="text/css" href=".././assets/styles/vmsApiTester.css"  />
+
+    </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container-fluid" >
+
+      <!-- inputs -->
+      <div class="panel panel-default">
+        <div class="panel-heading">Input</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputBaseUrl">Base URL</label>
+            <input type="text" class="form-control input-sm" id="inputBaseUrl" readonly />
+          </div>
+          <label for="panelColumnFilters">Select columns</label>
+          <small>Note: it is optional to select columns; no selection will result in just items being returned</small>
+          <div class="panel panel-default" id="panelColumnFilters">
+            <div class="panel-body">
+              <div class="form-group" id="panelColumnButtons">          
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-control input-sm" id="inputColumnFilter" readonly />
+              </div>              
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputQueryParamaters">Query parameters</label>
+            <small>Enter key value pairs in format key1=x,y,z&key2=0&key3=A,B,C etc</small>
+            <input class="form-control input-sm" type="text" id="inputQueryParameters" value="pageId=f1r,f2r&transcriber=H&isComment=0" />
+          </div>
+          <div class="form-group">
+            <label for="inputMorphemeDefinition">Morpheme definition</label>
+            <small>Enter comma delimited list of EVA morphemes with length > 1</small>
+            <input class="form-control input-sm" type="text" id="inputMorphemes" value="cfh,ckh,cph,cth,eee,iii,ch,ee,ii,qo,sh" />
+          </div>
+          <div class="checkbox">
+            <label><input type="checkbox" id="checkPretty">Pretty print JSON output</label>
+          </div>
+          <button class="btn btn-primary" type="button" id="buttonGetTokens">Get tokens</button>
+          <button class="btn btn-primary" type="button" id="buttonGetMorphemes">Get morphemes</button>
+          <button class="btn btn-primary" type="button" id="buttonGetUniqueTokens">Get unique tokens</button>
+          <button class="btn btn-primary" type="button" id="buttonGetUniqueMorphemes">Get unique morphemes</button>
+          <div class="btn-group ">
+            <button class="btn btn-info dropdown-toggle" type="button" data-toggle="dropdown" id="buttonGetMetadata">
+            Get column metadata <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="listColumnOptions">            
+            </ul>
+          </div>
+        </div>
+      </div>
+            
+      <!-- outputs -->
+      <div class="panel panel-default" id="panelOutput">
+        <div class="panel-heading">Output</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputFinalUrl">Final URL</label>
+            <input type="text" class="form-control input-sm" id="inputFinalUrl" readonly />
+          </div>
+          <div class="form-group">
+            <label for="panelOutputContent">Output</label>
+            <div id="containerOutput">
+            </div>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+    
+    <!-- message box -->
+    <div id="modalMessage" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Message</h4>
+          </div>
+          <div class="modal-body" id="modalMessageContent">
+            <p></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- script for page -->
+    <script src=".././assets/scripts/vmsApiTester.js"></script>
+
+  </body>
+
+</html>

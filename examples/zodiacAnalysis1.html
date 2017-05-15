@@ -1,0 +1,175 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>VMs REST API</title>
+
+    <!-- styles -->
+    <!-- bootstrap style -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    
+  </head>
+  
+  <body style="padding-top: 70px;">
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Voynich Manuscript REST API</a>
+        </div>
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li>
+              <a href="../documentation.html">About</a>
+            </li>
+          </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+      </div>
+      <!-- /.container -->
+    </nav>
+    
+    <!-- main container -->
+    <div class="container-fluid" >
+      <div class="panel panel-default">
+        <div class="panel-heading">Zodiac Analysis 1</div>
+        <div class="panel-body">
+          <div class="form-group">
+            <label for="inputUrl">API URL</label>
+            <input type="text" class="form-control" id="inputUrl" value="" />
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-primary" id="buttonAnalyse">Analyse</button>
+            <div class="alert alert-warning collapse" id="alertRequestError">
+              <a href="#" class="close" data-dismiss="alert">&times;</a>
+              <strong>Warning!</strong> The request failed - check the URL
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputUrl">Output</label>
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <div id="containerOutput"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+        
+    <!-- scripts -->
+    <!-- jquery and bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+    <!-- script to get data and print output to div with eva font class -->
+    <script>
+      var url = '';
+      url += 'http://datalunch.com/voynich/api/v1/tokens/';
+      url += 'pageId,pageNumber,illustrationType,unitCode,lineNumber,transcriber,item';
+      url += '?illustrationType=Z&unitCode=R1,R2,R3,R4&transcriber=H&isAmbiguous=0&isWord=1&hasFiller=0';
+      
+      var map1 = {
+        "f70v2": {"signCaption": "Pisces", words:[]},
+        "f70v1": {"signCaption": "Aries-dark", words:[]},
+        "f71r": {"signCaption": "Aries-light", words:[]},
+        "f71v": {"signCaption": "Taurus-light", words:[]},
+        "f72r1": {"signCaption": "Taurus-dark", words:[]},
+        "f72r2": {"signCaption": "Gemini", words:[]},
+        "f72r3": {"signCaption": "Cancer", words:[]},
+        "f72v3": {"signCaption": "Leo", words:[]},
+        "f72v2": {"signCaption": "Virgo", words:[]},
+        "f72v1": {"signCaption": "Libra", words:[]},
+        "f73r": {"signCaption": "Scorpio", words:[]},
+        "f73v": {"signCaption": "Sagittarius", words:[]}    
+      };
+      
+      var warmPages = ["f70v1", "f71r", "f72r2", "f72v3", "f72r1", "f73v"];
+      var coolPages = ["f71v", "f72r1", "f72r3", "f72v2", "f73r", "f70v2"];
+           
+      $(document).ready(function() {
+        $('#inputUrl').val(url);
+      });
+      
+      $('#buttonAnalyse').on('click', function() {
+        $('#alertRequestError').hide();
+        $('#containerOutput').empty();
+        
+        $.ajax({
+          url: $('#inputUrl').val(),
+          type: 'GET',
+          success: function(data) {
+            analyseOutput(data);
+          },
+          error: function(xhr, status, error) {
+            $('#alertRequestError').show();
+          }
+        });
+      });
+      
+      function analyseOutput(data) {
+        // add words to map
+        $.each(data.tokens, function(index, tokenObj) {
+          if (map1[tokenObj.pageId].words.indexOf(tokenObj.item) < 0) {
+            map1[tokenObj.pageId].words.push(tokenObj.item);
+          }
+        });
+        
+        // warm words
+        var warmWords = [];
+        $.each(warmPages, function(index, pageId) {
+          $.each(map1[pageId].words, function(index, word) {
+            if (warmWords.indexOf(word) < 0) {
+              warmWords.push(word);
+            }
+          })
+        });
+          
+        // cool words
+        var coolWords = [];
+        $.each(coolPages, function(index, pageId) {
+          $.each(map1[pageId].words, function(index, word) {
+            if (coolWords.indexOf(word) < 0) {
+              coolWords.push(word);
+            }
+          })
+        });
+        
+        // warm words not in cool 
+        var warmNotInCool = warmWords.filter(function(k) {
+          return coolWords.indexOf(k) < 0;}
+        ).sort();
+        
+        // cool words not in warm
+        var coolNotInWarm = coolWords.filter(function(k) {
+          return warmWords.indexOf(k) < 0;}
+        ).sort();
+        
+        // output
+        var html = '';
+        html += 'warm not in cool<br><pre>';
+        html += JSON.stringify(warmNotInCool, null, 2) + '</pre><br>';
+        html += '<br>';
+        html += 'cool not in warm<br><pre>';
+        html += JSON.stringify(coolNotInWarm, null, 2) + '</pre><br>';
+        $('#containerOutput').html(html);
+      }
+    </script>
+
+  </body>
+
+</html>
